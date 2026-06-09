@@ -7,17 +7,29 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $user_input = $_POST['username'];
     $pass_input = $_POST['password'];
 
-    // ?? KODE RENTAN (VULNERABLE) - PENGGABUNGAN STRING LANGSUNG
-    $sql = "SELECT * FROM users WHERE username = '$user_input' AND password = '$pass_input'";
+    // ? KODE AMAN (SECURE) - PREPARED STATEMENTS MYSQLI
     
-    $result = $conn->query($sql);
+    // 1. Siapkan cetakan Query dengan tanda tanya (?) sebagai tempat variabel
+    $sql_aman = "SELECT * FROM users WHERE username = ? AND password = ?";
+    
+    // 2. Kirim kerangka query ke MySQL untuk di-prepare (dikunci strukturnya)
+    $stmt = $conn->prepare($sql_aman);
+
+    // 3. Binding Parameter: "ss" artinya dua inputan tersebut adalah String
+    $stmt->bind_param("ss", $user_input, $pass_input);
+
+    // 4. Eksekusi query dengan data aman yang baru disisipkan
+    $stmt->execute();
+    $result = $stmt->get_result();
 
     if ($result->num_rows > 0) {
         $row = $result->fetch_assoc();
         $pesan = "? Berhasil Login! Selamat datang, Role: " . $row['role'];
     } else {
-        $pesan = "? Gagal Login! Cek kembali username/password.";
+        $pesan = "? Gagal Login! Sistem memblokir injeksi.";
     }
+    
+    $stmt->close();
 }
 ?>
 
